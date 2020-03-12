@@ -85,7 +85,6 @@ def get_unique_groups():
     for group in groups_with_friends:
         params = {'access_token': access_token, 'group_id': group, 'filter': 'friends', 'v': V}
         response = requests.get(url=f'{API}/groups.getMembers', params=params)
-        print(response.json())
         resp = response.json()['response']
         if resp['count'] <= n:
             mutual_groups.add(group)
