@@ -78,23 +78,38 @@ class User:
 def get_unique_groups():
     user = User(user_id)
     friends_groups = user.get_groups_by_execute()
+    mutual_groups = set()
     group_set = user.get_groups()[1]
     unique_groups = group_set.difference(friends_groups)
-    return unique_groups
+    groups_with_friends = group_set.intersection(friends_groups)
+    for group in groups_with_friends:
+        params = {'access_token': access_token, 'group_id': group, 'filter': 'friends', 'v': V}
+        response = requests.get(url=f'{API}/groups.getMembers', params=params)
+        print(response.json())
+        resp = response.json()['response']
+        if resp['count'] <= n:
+            mutual_groups.add(group)
+        print('Группы с общими друзьями обрабатываются...')
+        time.sleep(0.3)
+    return unique_groups, mutual_groups
 
 
 def write_json():
-
     user = User(user_id)
-    json_list = list()
-    groups = get_unique_groups()
+    unique_groups = list()
+    mutual_groups = list()
+    json_dict =dict()
+    groups, groups_with_friends = get_unique_groups()
     self_groups = user.get_groups()[0]
-
     for group in self_groups:
         if group['gid'] in groups:
-            json_list.append(group)
+            unique_groups.append(group)
+        if group['gid'] in groups_with_friends:
+            mutual_groups.append(group)
+        json_dict[f'Уникальные группы пользователя {user_id}:'] = unique_groups
+        json_dict[f'Группы, в которых есть не больше {n} друзей:'] = mutual_groups
     with open("groups.json", "w") as f:
-        f.writelines(json.dumps(json_list, ensure_ascii=False))
+        f.writelines(json.dumps(json_dict, sort_keys=True, ensure_ascii=False))
 
 
 if __name__ == "__main__":
@@ -103,4 +118,5 @@ if __name__ == "__main__":
     with open('token.txt', 'r') as f:
         access_token = f.read()
     user_id = input("Введите id в формате idXXXXX, или screen name пользователя: ")
+    n = int(input("Введите максимальное количество друзей в группе: "))
     write_json()
